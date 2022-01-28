@@ -1,13 +1,15 @@
 import time
 from random import randint
-from threading import Event
+
+# Events not used yet - can you await them?
+# from threading import Event
 
 from pydantic import BaseModel
 
 
 class MyTask:
     def __init__(self, no):
-        self.event = Event()
+        #  self.event = Event()
         self.priority = randint(1, 5)
         self.no = no
         self.aborted = False
