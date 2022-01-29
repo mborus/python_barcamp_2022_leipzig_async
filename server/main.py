@@ -3,10 +3,9 @@ from queue import PriorityQueue
 from threading import Thread
 
 import uvicorn
+from background import background_worker_thread, wake_up_worker_trigger
 from fastapi import FastAPI, HTTPException
-
-from model import MyTask, Message, ExampleResponse
-from background import background_worker_thread
+from model import ExampleResponse, Message, MyTask
 
 LOOP_TIME_WAIT_SEC = 0.2
 LOOP_TIMEOUT = 5
@@ -22,7 +21,14 @@ bg.start()
 app = FastAPI()
 
 
-@app.get("/", response_model=ExampleResponse, responses={429: {"model": Message}, 408: {"model": Message}, })
+@app.get(
+    "/",
+    response_model=ExampleResponse,
+    responses={
+        429: {"model": Message},
+        408: {"model": Message},
+    },
+)
 async def root():
 
     global global_task_count
@@ -35,17 +41,8 @@ async def root():
 
     print(f"put {mytask} into queue, size {len(global_pq.queue)}")
     global_pq.put((mytask.priority, mytask))
+    wake_up_worker_trigger.set()  # note: this is a sync (threading event)
 
-    # while True:
-    #
-    #     await asyncio.sleep(LOOP_TIME_WAIT_SEC)
-    #
-    #     if mytask.completed:
-    #         break
-    #
-    #     if mytask.exist_time > LOOP_TIMEOUT:
-    #         mytask.aborted = True  # Race condition with background worker!
-    #         raise HTTPException(status_code=408, detail="worker did not finish on time")
     try:
         await asyncio.wait_for(mytask.event.wait(), LOOP_TIMEOUT)
     except asyncio.exceptions.TimeoutError as err:

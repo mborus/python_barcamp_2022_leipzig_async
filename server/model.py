@@ -1,16 +1,16 @@
 import time
-from random import randint
 
 # Events not used yet - can you await them?
 # from threading import Event
 from asyncio import Event
+from random import randint
 
 from pydantic import BaseModel
 
 
 class MyTask:
     def __init__(self, no):
-        self.event = Event()
+        self.event = Event()  # Note: This is an awaitable async event
         self.priority = randint(1, 5)
         self.no = no
         self.aborted = False
@@ -31,8 +31,10 @@ class MyTask:
     def exist_time(self):
         return time.time() - self.create_time
 
+
 class Message(BaseModel):
     message: str
+
 
 class ExampleResponse(BaseModel):
     count: int
