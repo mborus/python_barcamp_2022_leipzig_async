@@ -3,13 +3,14 @@ from random import randint
 
 # Events not used yet - can you await them?
 # from threading import Event
+from asyncio import Event
 
 from pydantic import BaseModel
 
 
 class MyTask:
     def __init__(self, no):
-        #  self.event = Event()
+        self.event = Event()
         self.priority = randint(1, 5)
         self.no = no
         self.aborted = False
@@ -23,6 +24,7 @@ class MyTask:
         return f"Task No {self.no}, Priority {self.priority}"
 
     def complete(self):
+        self.event.set()
         self.completed = True
 
     @property

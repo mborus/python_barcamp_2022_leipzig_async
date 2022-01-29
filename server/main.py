@@ -36,16 +36,20 @@ async def root():
     print(f"put {mytask} into queue, size {len(global_pq.queue)}")
     global_pq.put((mytask.priority, mytask))
 
-    while True:
-
-        await asyncio.sleep(LOOP_TIME_WAIT_SEC)
-
-        if mytask.completed:
-            break
-
-        if mytask.exist_time > LOOP_TIMEOUT:
-            mytask.aborted = True  # Race condition with background worker!
-            raise HTTPException(status_code=408, detail="worker did not finish on time")
+    # while True:
+    #
+    #     await asyncio.sleep(LOOP_TIME_WAIT_SEC)
+    #
+    #     if mytask.completed:
+    #         break
+    #
+    #     if mytask.exist_time > LOOP_TIMEOUT:
+    #         mytask.aborted = True  # Race condition with background worker!
+    #         raise HTTPException(status_code=408, detail="worker did not finish on time")
+    try:
+        await asyncio.wait_for(mytask.event.wait(), LOOP_TIMEOUT)
+    except asyncio.exceptions.TimeoutError as err:
+        raise HTTPException(status_code=408, detail="worker did not finish on time")
 
     return {
         "count": mytask.no,
