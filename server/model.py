@@ -4,6 +4,7 @@ import time
 # from threading import Event
 from asyncio import Event
 from random import randint
+from typing import Optional
 
 from pydantic import BaseModel
 
@@ -16,6 +17,8 @@ class MyTask:
         self.aborted = False
         self.completed = False
         self.create_time = time.time()
+        self.raw_request = None
+        self.raw_response = None
 
     def __lt__(self, other):
         return self.priority < other.priority
@@ -37,8 +40,10 @@ class Message(BaseModel):
 
 
 class ExampleResponse(BaseModel):
+    req_method: Optional[str]
     count: int
     global_count: int
     priority: int
     queue_size: int
     runtime_ms: int
+    response: Optional[bytes] = None

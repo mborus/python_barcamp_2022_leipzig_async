@@ -1,10 +1,11 @@
 import asyncio
 from queue import PriorityQueue
 from threading import Thread
+from typing import Optional
 
 import uvicorn
 from background import background_worker_thread, wake_up_worker_trigger
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from model import ExampleResponse, Message, MyTask
 
 LOOP_TIME_WAIT_SEC = 0.2
@@ -29,11 +30,35 @@ app = FastAPI()
         408: {"model": Message},
     },
 )
-async def root():
+async def get_from_root(request: Request):
+    result = await process_root_request(request)
+    return result
+
+
+@app.post(
+    "/",
+    response_model=ExampleResponse,
+    responses={
+        429: {"model": Message},
+        408: {"model": Message},
+    },
+)
+async def post_to_root(request: Request):
+    result = await process_root_request(request, raw_body=await request.body())
+    return result
+
+
+async def process_root_request(request: Request, raw_body: Optional[bytes] = None):
+
+    """processes both GET and POST request"""
+
+    # Note: See https://github.com/tiangolo/fastapi/issues/558#issuecomment-533931308 on how to
+    # access the body
 
     global global_task_count
     global_task_count += 1
     mytask = MyTask(no=global_task_count)
+    mytask.raw_request = raw_body
 
     # check queue size
     if len(global_pq.queue) > PQ_MAXSIZE:
@@ -49,11 +74,13 @@ async def root():
         raise HTTPException(status_code=408, detail="worker did not finish on time")
 
     return {
+        "req_method": request.method,
         "count": mytask.no,
         "global_count": global_task_count,
         "priority": mytask.priority,
         "queue_size": len(global_pq.queue),
         "runtime_ms": int(mytask.exist_time * 1000),
+        "response": mytask.raw_response,
     }
 
 

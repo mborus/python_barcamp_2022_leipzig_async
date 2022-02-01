@@ -16,15 +16,14 @@ def background_worker_thread(worker_priority_queue: PriorityQueue):
     global wake_up_worker_trigger
 
     while True:
-
         try:
             task: MyTask
             priority, task = worker_priority_queue.get(block=None)
             print(f'background {datetime.datetime.now().strftime("%H:%M:%S")} {task}')
-            if not task.aborted:
-                # TODO - Do the actual work here
-                time.sleep(LOOP_TIME_WORK_SEC)
-            task.complete()
+            if task.aborted:
+                task.complete()
+            else:
+                work_on_task(mytask=task)
         except Empty:
 
             # when the queue is totally empty, pause for a fixed amount of time
@@ -42,3 +41,14 @@ def background_worker_thread(worker_priority_queue: PriorityQueue):
             # waited_time = 1000 * (time.time() - start_time)
             # if waited_time < LOOP_TIME_SEC * 1000:
             #     print(f"waited {waited_time}")
+
+
+def work_on_task(mytask: MyTask) -> None:
+    """Here the work on the task is done.
+    task completion is communicated"""
+
+    # TODO - Do the actual work here
+    if mytask.raw_request:
+        mytask.raw_response = mytask.raw_request[::-1]
+    time.sleep(LOOP_TIME_WORK_SEC)
+    mytask.complete()
