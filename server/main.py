@@ -71,6 +71,7 @@ async def process_root_request(request: Request, raw_body: Optional[bytes] = Non
     try:
         await asyncio.wait_for(mytask.event.wait(), LOOP_TIMEOUT)
     except asyncio.exceptions.TimeoutError as err:
+        mytask.aborted = True
         raise HTTPException(status_code=408, detail="worker did not finish on time")
 
     return {

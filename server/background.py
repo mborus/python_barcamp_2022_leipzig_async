@@ -20,6 +20,11 @@ def background_worker_thread(worker_priority_queue: PriorityQueue):
             task: MyTask
             priority, task = worker_priority_queue.get(block=None)
             print(f'background {datetime.datetime.now().strftime("%H:%M:%S")} {task}')
+
+            # It's possible that tasks are aborted after they are put on the queue
+            # it's a race condition, but it just means noone is waiting for the result
+            # any longer
+
             if task.aborted:
                 task.complete()
             else:
@@ -35,17 +40,13 @@ def background_worker_thread(worker_priority_queue: PriorityQueue):
             # the wait
 
             wake_up_worker_trigger.clear()
-            # start_time = time.time()
             wake_up_worker_trigger.wait(timeout=LOOP_TIME_SEC)
-
-            # waited_time = 1000 * (time.time() - start_time)
-            # if waited_time < LOOP_TIME_SEC * 1000:
-            #     print(f"waited {waited_time}")
 
 
 def work_on_task(mytask: MyTask) -> None:
     """Here the work on the task is done.
-    task completion is communicated"""
+    task completion is communicated via the object
+    """
 
     # TODO - Do the actual work here
     if mytask.raw_request:
